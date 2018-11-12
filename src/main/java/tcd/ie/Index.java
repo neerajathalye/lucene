@@ -1,5 +1,8 @@
 package tcd.ie;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.DirectoryFileFilter;
+import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -20,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Predicate;
 // import org.apache.lucene.store.RAMDirectory;
 
 public class Index {
@@ -81,7 +85,26 @@ public class Index {
 //        File[] files = ftDirectory.listFiles();
 //        for(File f : files)
 //            System.out.println(f.getName());
-//        listFiles(ftDirectory);
+        ArrayList<File> ftList = addFilesToList(ftDirectory);
+        ArrayList<File> fr94List = addFilesToList(fr94Directory);
+        ArrayList<File> fbisList = addFilesToList(fbisDirectory);
+        ArrayList<File> latimesList = addFilesToList(latimesDirectory);
+
+
+        ftList.removeIf(e->e.getParentFile().getAbsolutePath().equals(ftDirectory.getAbsolutePath())); //removes files with parent as ft(readfrcg and readmeft)
+
+        fr94List.removeIf(e->e.getParentFile().getAbsolutePath().equals(fr94Directory.getAbsolutePath())); //removes files with parent as fr94(.DS_STORE and readchg and readmefr)
+
+        fbisList.removeIf(e->e.getName().contains(".txt")); //removes files with .txt extension(readchg and readmefb)
+
+        latimesList.removeIf(e->e.getName().contains(".txt")); //removes files with .txt extension(readchg and readmela)
+
+
+
+        for(File f : latimesList)
+            System.out.println(f.getName());
+
+
 
 
 
@@ -147,20 +170,34 @@ public class Index {
         directory.close();
     }
 
-    public static void listFiles(File dir) {
-        try {
-            File[] files = dir.listFiles();
-            for (File file : files) {
-                if (file.isDirectory()) {
-                    System.out.println("directory:" + file.getCanonicalPath());
-                    listFiles(file);
-                } else {
-                    System.out.println("     file:" + file.getCanonicalPath());
-                }
+
+    public static void listDirectoryContents(File dir) {
+        File[] files = dir.listFiles();
+        for (File file : files) {
+            if (file.isDirectory()) {
+                System.out.println("directory:" + file.getName());
+                listDirectoryContents(file);
+            } else {
+                System.out.println("     file:" + file.getName());
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
+    public static ArrayList<File> addFilesToList(File dir) {
+
+        ArrayList<File> files = new ArrayList<>();
+
+        Collection fileCollection = FileUtils.listFiles(dir, new RegexFileFilter("^(.*?)"), DirectoryFileFilter.DIRECTORY);
+
+        Iterator iterator = fileCollection.iterator();
+
+        while (iterator.hasNext())
+            files.add((File) iterator.next());
+
+//        for(File f : files)
+//            System.out.println("FILE: " + f.getName());
+
+        return files;
+    }
+
 
 }
