@@ -1,4 +1,4 @@
-package tcd.ie.code;
+package tcd.ie;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
