@@ -195,6 +195,11 @@ public class Index {
                         String title = documentContents.substring((documentContents.indexOf("<TI>") + 4), documentContents.indexOf("</TI>"));
                         String ADType = documentContents.substring((documentContents.indexOf("</DATE1>") + 8), documentContents.indexOf("<H3>"));
                         String text = documentContents.substring((documentContents.indexOf("<TEXT>") + 6), documentContents.indexOf("</TEXT>"));
+                        String Headline2 = null;
+                        if(documentContents.toString().contains("<H2>"))
+                            Headline2 = documentContents.substring((documentContents.indexOf("<H2>") + 4), documentContents.indexOf("</H2>"));
+                        else
+                            Headline2 = "";
 
 
                         // Creating the document
@@ -205,6 +210,7 @@ public class Index {
                         doc.add(new TextField("title", title, Field.Store.YES));
                         doc.add(new TextField("Article & Doc type", ADType, Field.Store.YES));
                         doc.add(new TextField("text", text, Field.Store.YES));
+                        doc.add(new TextField("Headline2", Headline2, Field.Store.YES));
 //
                         // Save the document to the index
                         iWriter.addDocument(doc);
