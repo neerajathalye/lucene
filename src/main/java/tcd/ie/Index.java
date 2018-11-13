@@ -94,18 +94,17 @@ public class Index {
         iWriter.close();
         directory.close();
 
+
     }
 
-    private static ArrayList<Document> parseFT(ArrayList<File> list) throws IOException {
+    private static ArrayList<Document> parseFT(ArrayList<File> ftList) throws IOException {
 
         ArrayList<Document> documentArrayList = new ArrayList<>();
         StringBuilder documentContents = new StringBuilder();
-        for(File f : list)
+        for(File f : ftList)
         {
             BufferedReader reader = new BufferedReader(new FileReader(f));
             String line = null;
-
-            int documentNumber = 0;
 
             while ((line = reader.readLine()) != null)
             {
@@ -256,7 +255,95 @@ public class Index {
         System.out.println("Parsed LATimes List size: " + documentArrayList.size());
 
         return documentArrayList;
+    }
 
+    private static void parsefbis(ArrayList<File> fbisList) throws IOException {
+
+        // Analyzer that is used to process TextField
+        Analyzer analyzer = new StandardAnalyzer();
+
+        // To store an index in memory
+        // Directory directory = new RAMDirectory();
+        // To store an index on disk
+        Directory directory = FSDirectory.open(Paths.get(INDEX_DIRECTORY));
+        IndexWriterConfig config = new IndexWriterConfig(analyzer);
+
+        config.setSimilarity(new BM25Similarity());
+        // Index opening mode
+        // IndexWriterConfig.OpenMode.CREATE = create a new index
+        // IndexWriterConfig.OpenMode.APPEND = open an existing index
+        // IndexWriterConfig.OpenMode.CREATE_OR_APPEND = create an index if it
+        // does not exist, otherwise it opens it
+        config.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+
+        IndexWriter iWriter = new IndexWriter(directory, config);
+
+        StringBuilder documentContents = new StringBuilder();
+        for(File f : fbisList)
+        {
+            BufferedReader reader = new BufferedReader(new FileReader(f));
+            String line = null;
+
+            int documentNumber = 0;
+
+            ArrayList<StringBuilder> documentList = new ArrayList<>();
+
+            while ((line = reader.readLine()) != null)
+            {
+                if(line.contains("<DOC>"))
+                    documentContents = new StringBuilder();
+                else
+                {
+                    if(!line.contains("</DOC>"))
+                        documentContents.append(line);
+                    else {
+                        documentList.add(documentContents);
+                        String docNo = documentContents.substring((documentContents.indexOf("<DOCNO>") + 7), documentContents.indexOf("</DOCNO>")); // Number added to index is length of the tag
+                        String headercode = documentContents.substring((documentContents.indexOf("<HT>") + 4), documentContents.indexOf("</HT>"));
+                        String date = documentContents.substring((documentContents.indexOf("<DATE1>") + 7), documentContents.indexOf("</DATE1>"));
+                        String title = documentContents.substring((documentContents.indexOf("<TI>") + 4), documentContents.indexOf("</TI>"));
+                        String ADType = documentContents.substring((documentContents.indexOf("</DATE1>") + 8), documentContents.indexOf("<H3>"));
+                        String text = documentContents.substring((documentContents.indexOf("<TEXT>") + 6), documentContents.indexOf("</TEXT>"));
+                        String Headline2 = null;
+                        if(documentContents.toString().contains("<H2>"))
+                            Headline2 = documentContents.substring((documentContents.indexOf("<H2>") + 4), documentContents.indexOf("</H2>"));
+                        else
+                            Headline2 = "";
+
+
+                        // Creating the document
+                        Document doc = new Document();
+                        doc.add(new TextField("document-number", docNo, Field.Store.YES));
+                        doc.add(new TextField("header-code", headercode, Field.Store.YES));
+                        doc.add(new TextField("date", date, Field.Store.YES));
+                        doc.add(new TextField("title", title, Field.Store.YES));
+                        doc.add(new TextField("Article & Doc type", ADType, Field.Store.YES));
+                        doc.add(new TextField("text", text, Field.Store.YES));
+                        doc.add(new TextField("Headline2", Headline2, Field.Store.YES));
+//
+                        // Save the document to the index
+                        iWriter.addDocument(doc);
+
+                        System.out.println(docNo);
+                        System.out.println(headercode);
+                        System.out.println(date);
+                        System.out.println(title);
+                        System.out.println(ADType);
+                        System.out.println(text);
+                        System.out.println(Headline2);
+
+
+
+                    }
+                }
+            }
+        }
+
+        System.out.println("Index created.");
+
+        // Commit changes and close everything
+        iWriter.close();
+        directory.close();
     }
 
 
