@@ -215,10 +215,15 @@ public class Index {
                         // Save the document to the index
                         iWriter.addDocument(doc);
 
-//                        System.out.println(docNo);
-//                        System.out.println(headercode);
-//                        System.out.println(header);
-//                        System.out.println(text);
+                        System.out.println(docNo);
+                        System.out.println(headercode);
+                        System.out.println(date);
+                        System.out.println(title);
+                        System.out.println(ADType);
+                        System.out.println(text);
+                        System.out.println(Headline2);
+
+
 
                     }
                 }
