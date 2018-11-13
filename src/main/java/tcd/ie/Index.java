@@ -192,6 +192,7 @@ public class Index {
                         String docNo = documentContents.substring((documentContents.indexOf("<DOCNO>") + 7), documentContents.indexOf("</DOCNO>")); // Number added to index is length of the tag
                         String headercode = documentContents.substring((documentContents.indexOf("<HT>") + 4), documentContents.indexOf("</HT>"));
                         String date = documentContents.substring((documentContents.indexOf("<DATE1>") + 7), documentContents.indexOf("</DATE1>"));
+                        String title = documentContents.substring((documentContents.indexOf("<TI>") + 4), documentContents.indexOf("</TI>"));
                         String header = documentContents.substring((documentContents.indexOf("<HEADER>") + 8), documentContents.indexOf("</HEADER>"));
                         String text = documentContents.substring((documentContents.indexOf("<TEXT>") + 6), documentContents.indexOf("</TEXT>"));
 
@@ -201,6 +202,7 @@ public class Index {
                         doc.add(new TextField("document-number", docNo, Field.Store.YES));
                         doc.add(new TextField("header-code", headercode, Field.Store.YES));
                         doc.add(new TextField("date", date, Field.Store.YES));
+                        doc.add(new TextField("title", title, Field.Store.YES));
                         doc.add(new TextField("header", header, Field.Store.YES));
                         doc.add(new TextField("text", text, Field.Store.YES));
 //
