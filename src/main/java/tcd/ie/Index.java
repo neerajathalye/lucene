@@ -193,7 +193,7 @@ public class Index {
                         String headercode = documentContents.substring((documentContents.indexOf("<HT>") + 4), documentContents.indexOf("</HT>"));
                         String date = documentContents.substring((documentContents.indexOf("<DATE1>") + 7), documentContents.indexOf("</DATE1>"));
                         String title = documentContents.substring((documentContents.indexOf("<TI>") + 4), documentContents.indexOf("</TI>"));
-                        String header = documentContents.substring((documentContents.indexOf("<HEADER>") + 8), documentContents.indexOf("</HEADER>"));
+                        String ADType = documentContents.substring((documentContents.indexOf("</DATE1>") + 8), documentContents.indexOf("<H3>"));
                         String text = documentContents.substring((documentContents.indexOf("<TEXT>") + 6), documentContents.indexOf("</TEXT>"));
 
 
@@ -203,7 +203,7 @@ public class Index {
                         doc.add(new TextField("header-code", headercode, Field.Store.YES));
                         doc.add(new TextField("date", date, Field.Store.YES));
                         doc.add(new TextField("title", title, Field.Store.YES));
-                        doc.add(new TextField("header", header, Field.Store.YES));
+                        doc.add(new TextField("Article & Doc type", ADType, Field.Store.YES));
                         doc.add(new TextField("text", text, Field.Store.YES));
 //
                         // Save the document to the index
