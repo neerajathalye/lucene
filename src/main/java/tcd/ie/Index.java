@@ -51,6 +51,7 @@ public class Index {
         latimesList.removeIf(e->e.getName().contains(".txt")); //removes files with .txt extension(readchg and readmela)
 
         parseFT(ftList);
+        parsefbis(fbisList);
 
 //
 //        System.out.println("Document Count: " + docCount);
@@ -146,6 +147,81 @@ public class Index {
         iWriter.close();
         directory.close();
     }
+
+    private static void parsefbis(ArrayList<File> fbisList) throws IOException {
+
+        // Analyzer that is used to process TextField
+        Analyzer analyzer = new StandardAnalyzer();
+
+        // To store an index in memory
+        // Directory directory = new RAMDirectory();
+        // To store an index on disk
+        Directory directory = FSDirectory.open(Paths.get(INDEX_DIRECTORY));
+        IndexWriterConfig config = new IndexWriterConfig(analyzer);
+
+        config.setSimilarity(new BM25Similarity());
+        // Index opening mode
+        // IndexWriterConfig.OpenMode.CREATE = create a new index
+        // IndexWriterConfig.OpenMode.APPEND = open an existing index
+        // IndexWriterConfig.OpenMode.CREATE_OR_APPEND = create an index if it
+        // does not exist, otherwise it opens it
+        config.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+
+        IndexWriter iWriter = new IndexWriter(directory, config);
+
+        StringBuilder documentContents = new StringBuilder();
+        for(File f : fbisList)
+        {
+            BufferedReader reader = new BufferedReader(new FileReader(f));
+            String line = null;
+
+            int documentNumber = 0;
+
+            ArrayList<StringBuilder> documentList = new ArrayList<>();
+
+            while ((line = reader.readLine()) != null)
+            {
+                if(line.contains("<DOC>"))
+                    documentContents = new StringBuilder();
+                else
+                {
+                    if(!line.contains("</DOC>"))
+                        documentContents.append(line);
+                    else {
+                        documentList.add(documentContents);
+                        String docNo = documentContents.substring((documentContents.indexOf("<DOCNO>") + 7), documentContents.indexOf("</DOCNO>")); // Number added to index is length of the tag
+                        String headercode = documentContents.substring((documentContents.indexOf("<HT>") + 4), documentContents.indexOf("</HT>"));
+                        String header = documentContents.substring((documentContents.indexOf("<HEADER>") + 8), documentContents.indexOf("</HEADER>"));
+                        String text = documentContents.substring((documentContents.indexOf("<TEXT>") + 6), documentContents.indexOf("</TEXT>"));
+
+
+                        // Creating the document
+                        Document doc = new Document();
+                        doc.add(new TextField("document-number", docNo, Field.Store.YES));
+                        doc.add(new TextField("header-code", headercode, Field.Store.YES));
+                        doc.add(new TextField("header", header, Field.Store.YES));
+                        doc.add(new TextField("text", text, Field.Store.YES));
+//
+                        // Save the document to the index
+                        iWriter.addDocument(doc);
+
+//                        System.out.println(docNo);
+//                        System.out.println(headercode);
+//                        System.out.println(header);
+//                        System.out.println(text);
+
+                    }
+                }
+            }
+        }
+
+        System.out.println("Index created.");
+
+        // Commit changes and close everything
+        iWriter.close();
+        directory.close();
+    }
+
 
 
     public static ArrayList<File> addFilesToList(File dir) {
