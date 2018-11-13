@@ -54,8 +54,8 @@ public class Index {
 
         parsedDocumentList.addAll(parseFT(ftList));
         parsedDocumentList.addAll(parseLATimes(latimesList));
+//        parsedDocumentList.addAll(parsefbis(fbisList)); //TODO: Change FBIS
 
-//        System.out.println("Combined List Size" + parsedDocumentList);
 
         // Analyzer that is used to process TextField
         Analyzer analyzer = new StandardAnalyzer();
