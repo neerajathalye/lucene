@@ -50,15 +50,12 @@ public class Index {
 
         latimesList.removeIf(e->e.getName().contains(".txt")); //removes files with .txt extension(readchg and readmela)
 
-        parseFT(ftList);
+        ArrayList<Document> parsedDocumentList = new ArrayList<>();
 
-//
-//        System.out.println("Document Count: " + docCount);
-//
+        parsedDocumentList.addAll(parseFT(ftList));
+        parsedDocumentList.addAll(parseLATimes(latimesList));
 
-    }
-
-    private static void parseFT(ArrayList<File> ftList) throws IOException {
+//        System.out.println("Combined List Size" + parsedDocumentList);
 
         // Analyzer that is used to process TextField
         Analyzer analyzer = new StandardAnalyzer();
@@ -79,15 +76,36 @@ public class Index {
 
         IndexWriter iWriter = new IndexWriter(directory, config);
 
+        long count = 0;
+
+        for(Document d : parsedDocumentList)
+        {
+            count++;
+            iWriter.addDocument(d);
+        }
+
+        System.out.println("Combined count = " + count);
+
+
+        System.out.println("Index Created.");
+
+
+        // Commit changes and close everything
+        iWriter.close();
+        directory.close();
+
+    }
+
+    private static ArrayList<Document> parseFT(ArrayList<File> list) throws IOException {
+
+        ArrayList<Document> documentArrayList = new ArrayList<>();
         StringBuilder documentContents = new StringBuilder();
-        for(File f : ftList)
+        for(File f : list)
         {
             BufferedReader reader = new BufferedReader(new FileReader(f));
             String line = null;
 
             int documentNumber = 0;
-
-            ArrayList<StringBuilder> documentList = new ArrayList<>();
 
             while ((line = reader.readLine()) != null)
             {
@@ -98,9 +116,8 @@ public class Index {
                     if(!line.contains("</DOC>"))
                         documentContents.append(line);
                     else {
-                        documentList.add(documentContents);
                         String docNo = documentContents.substring((documentContents.indexOf("<DOCNO>") + 7), documentContents.indexOf("</DOCNO>")); // Number added to index is length of the tag
-                        String profile = documentContents.substring((documentContents.indexOf("<PROFILE>") + 9), documentContents.indexOf("</PROFILE>"));
+//                        String profile = documentContents.substring((documentContents.indexOf("<PROFILE>") + 9), documentContents.indexOf("</PROFILE>"));
                         String date = documentContents.substring((documentContents.indexOf("<DATE>") + 6), documentContents.indexOf("</DATE>"));
                         String headline = documentContents.substring((documentContents.indexOf("<HEADLINE>") + 10), documentContents.indexOf("</HEADLINE>"));
                         String byline = null;
@@ -109,42 +126,137 @@ public class Index {
                         else
                             byline = "";
                         String text = documentContents.substring((documentContents.indexOf("<TEXT>") + 6), documentContents.indexOf("</TEXT>"));
-                        String publisher = documentContents.substring((documentContents.indexOf("<PUB>") + 5), documentContents.indexOf("</PUB>"));
-                        String page = documentContents.substring((documentContents.indexOf("<PAGE>") + 6), documentContents.indexOf("</PAGE>"));
+//                        String publisher = documentContents.substring((documentContents.indexOf("<PUB>") + 5), documentContents.indexOf("</PUB>"));
+//                        String page = documentContents.substring((documentContents.indexOf("<PAGE>") + 6), documentContents.indexOf("</PAGE>"));
 
                         // Creating the document
                         Document doc = new Document();
                         doc.add(new TextField("document-number", docNo, Field.Store.YES));
-                        doc.add(new TextField("profile", profile, Field.Store.YES));
+//                        doc.add(new TextField("profile", profile, Field.Store.YES));
                         doc.add(new TextField("date", date, Field.Store.YES));
                         doc.add(new TextField("headline", headline, Field.Store.YES));
                         doc.add(new TextField("byline", byline, Field.Store.YES));
                         doc.add(new TextField("text", text, Field.Store.YES));
-                        doc.add(new TextField("publisher", publisher, Field.Store.YES));
-                        doc.add(new TextField("page", page, Field.Store.YES));
-//
-                        // Save the document to the index
-                        iWriter.addDocument(doc);
+//                        doc.add(new TextField("publisher", publisher, Field.Store.YES));
+//                        doc.add(new TextField("page", page, Field.Store.YES));
+                        doc.add(new TextField("subject", "", Field.Store.YES)); // Blank since there is no subject in ft
 
-//                        System.out.println(docNo);
-//                        System.out.println(profile);
-//                        System.out.println(date);
-//                        System.out.println(headline);
-//                        System.out.println(byLine);
-//                        System.out.println(text);
-//                        System.out.println(publisher);
-//                        System.out.println(page);
+                        documentArrayList.add(doc);
 
                     }
                 }
             }
         }
+        System.out.println("Parsed FT List size: " + documentArrayList.size());
 
-        System.out.println("Index created.");
+        return documentArrayList;
 
-        // Commit changes and close everything
-        iWriter.close();
-        directory.close();
+    }
+    private static ArrayList<Document> parseLATimes(ArrayList<File> list) throws IOException {
+
+        ArrayList<Document> documentArrayList = new ArrayList<>();
+        StringBuilder documentContents = new StringBuilder();
+        for(File f : list)
+        {
+            BufferedReader reader = new BufferedReader(new FileReader(f));
+            String line = null;
+
+            int documentNumber = 0;
+
+            while ((line = reader.readLine()) != null)
+            {
+                if(line.contains("<DOC>"))
+                    documentContents = new StringBuilder();
+                else
+                {
+                    if(!line.contains("</DOC>") && !line.contains("<P>") && !line.contains("</P>"))
+                        documentContents.append(line);
+                    else if(line.contains("<P>") || line.contains("</P>"));
+                        //don nothing
+                    else {
+                        String docNo = documentContents.substring((documentContents.indexOf("<DOCNO>") + 7), documentContents.indexOf("</DOCNO>")); // Number added to index is length of the tag
+//                        String docId = documentContents.substring((documentContents.indexOf("<DOCID>") + 7), documentContents.indexOf("</DOCID>"));
+                        String date = documentContents.substring((documentContents.indexOf("<DATE>") + 6), documentContents.indexOf("</DATE>"));
+
+//                        String section = null;
+//                        if(documentContents.toString().contains("<SECTION>"))
+//                            section = documentContents.substring((documentContents.indexOf("<SECTION>") + 9), documentContents.indexOf("</SECTION>"));
+//                        else
+//                            section = "";
+
+//                        String length = null;
+//                        if(documentContents.toString().contains("<LENGTH>"))
+//                            length = documentContents.substring((documentContents.indexOf("<LENGTH>") + 8), documentContents.indexOf("</LENGTH>"));
+//                        else
+//                            length = "";
+
+                        String headline = null;
+                        if(documentContents.toString().contains("<HEADLINE>"))
+                            headline = documentContents.substring((documentContents.indexOf("<HEADLINE>") + 10), documentContents.indexOf("</HEADLINE>"));
+                        else
+                            headline = "";
+
+                        String byline = null;
+                        if(documentContents.toString().contains("<BYLINE>"))
+                            byline = documentContents.substring((documentContents.indexOf("<BYLINE>") + 8), documentContents.indexOf("</BYLINE>"));
+                        else
+                            byline = "";
+
+//                        String type = null;
+//                        if(documentContents.toString().contains("<TYPE>"))
+//                            type = documentContents.substring((documentContents.indexOf("<TYPE>") + 6), documentContents.indexOf("</TYPE>"));
+//                        else
+//                            type = "";
+
+                        String subject = null;
+                        if(documentContents.toString().contains("<SUBJECT>"))
+                            subject = documentContents.substring((documentContents.indexOf("<SUBJECT>") + 9), documentContents.indexOf("</SUBJECT>"));
+                        else
+                            subject = "";
+
+//                        String publisher = null;
+//                        if(documentContents.toString().contains("<PUB>"))
+//                            publisher = documentContents.substring((documentContents.indexOf("<PUB>") + 5), documentContents.indexOf("</PUB>"));
+//                        else
+//                            publisher = "";
+
+//                        String page = null;
+//                        if(documentContents.toString().contains("<PAGE>"))
+//                            page = documentContents.substring((documentContents.indexOf("<PAGE>") + 6), documentContents.indexOf("</PAGE>"));
+//                        else
+//                            page = "";
+
+                        String text = null;
+                        if(documentContents.toString().contains("<TEXT>"))
+                            text = documentContents.substring((documentContents.indexOf("<TEXT>") + 6), documentContents.indexOf("</TEXT>"));
+                        else
+                            text = "";
+
+                        // Creating the document
+                        Document doc = new Document();
+                        doc.add(new TextField("document-number", docNo, Field.Store.YES));
+//                        doc.add(new TextField("document-id", docId, Field.Store.YES));
+                        doc.add(new TextField("date", date, Field.Store.YES));
+                        doc.add(new TextField("headline", headline, Field.Store.YES));
+                        doc.add(new TextField("byline", byline, Field.Store.YES));
+//                        doc.add(new TextField("section", section, Field.Store.YES));
+//                        doc.add(new TextField("length", length, Field.Store.YES));
+//                        doc.add(new TextField("type", type, Field.Store.YES));
+                        doc.add(new TextField("subject", subject, Field.Store.YES));
+                        doc.add(new TextField("text", text, Field.Store.YES));
+//                        doc.add(new TextField("publisher", publisher, Field.Store.YES));
+//                        doc.add(new TextField("page", page, Field.Store.YES));
+
+                        documentArrayList.add(doc);
+
+                    }
+                }
+            }
+        }
+        System.out.println("Parsed LATimes List size: " + documentArrayList.size());
+
+        return documentArrayList;
+
     }
 
 
