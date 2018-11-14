@@ -4,6 +4,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
@@ -23,6 +24,8 @@ public class Search {
 
     // the location of the search index
     private static String INDEX_DIRECTORY = "index";
+    private static String TOPIC_DIRECTORY = "topic";
+    private static String RESULT_DIRECTORY = "result";
 
     // Limit the number of search results we get
     private static int MAX_RESULTS = 1000;
@@ -39,88 +42,79 @@ public class Search {
         DirectoryReader ireader = DirectoryReader.open(directory);
         IndexSearcher isearcher = new IndexSearcher(ireader);
 
+        isearcher.setSimilarity(new BM25Similarity());
 
-
-        System.out.println("Enter 1 for default\nEnter 2 for Classic\nEnter 3 for BM25\n");
-        Scanner in = new Scanner(System.in);
-        int choice  = in.nextInt();
-
-        String resultsFileName = null;
-
-        switch (choice)
-        {
-            case 1:
-                //do nothing
-                resultsFileName = "defaultresults.test";
-                break;
-            case 2:
-                isearcher.setSimilarity(new ClassicSimilarity());
-                resultsFileName = "classicresults.test";
-                break;
-            case 3:
-                isearcher.setSimilarity(new BM25Similarity());
-                resultsFileName = "bm25results.test";
-                break;
-        }
+        String singleFieldResultFileName = "singleFieldResults.test";
+        String multiFieldResultsFileName = "multiFieldResults.test";
 
         // Create the query parser. The default search field is "content", but
         // we can use this to search across any field
-        QueryParser parser = new QueryParser("content", analyzer);
+
+        QueryParser singleFieldQueryParser = new QueryParser("text", analyzer);
+        QueryParser multiFieldQueryParser = new MultiFieldQueryParser(new String[]{"headline", "text", "subject"}, analyzer);
 
         ArrayList<String> queryList;
 
         queryList = getQueryList();
 
         String queryString = "";
-//        Scanner scanner = new Scanner(System.in);
 
-        for(String s : queryList)
-        {
+        for (String s : queryList) {
             queryString = s.trim();
-
+//
             if (queryString.length() > 0)
             {
                 // parse the query with the parser
-                Query term = parser.parse(queryString);
+                Query sTerm = singleFieldQueryParser.parse(queryString); // for Single field
+                Query mTerm = multiFieldQueryParser.parse(queryString); // for Multiple fields
 
                 // Get the set of results
-                ScoreDoc[] hits = isearcher.search(term, MAX_RESULTS).scoreDocs;
+                ScoreDoc[] sHits = isearcher.search(sTerm, MAX_RESULTS).scoreDocs; // for Single field
+                ScoreDoc[] mHits = isearcher.search(mTerm, MAX_RESULTS).scoreDocs; // for Multiple fields
 
-                File file = new File(resultsFileName);
-                FileWriter writer = new FileWriter(file, true);
+                File sFile = new File(RESULT_DIRECTORY + "/" + singleFieldResultFileName);
+                FileWriter sWriter = new FileWriter(sFile, true);
+
+                File mFile = new File(RESULT_DIRECTORY + "/" + multiFieldResultsFileName);
+                FileWriter mWriter = new FileWriter(mFile, true);
 
                 // Print the results
 //                System.out.println("Documents: " + hits.length);
-                for (int i = 0; i < hits.length; i++)
+                for (int i = 0; i < sHits.length; i++)
                 {
-                    Document hitDoc = isearcher.doc(hits[i].doc);
-                    String result = String.valueOf(queryList.indexOf(s)+1) + " 0 " + String.valueOf(hitDoc.get("document-number")) + " 0 " + String.valueOf(hits[i].score) + " STANDARD";
+                    Document hitDoc = isearcher.doc(sHits[i].doc);
+                    String result = String.valueOf(queryList.indexOf(s)+ 401) + " 0 " + String.valueOf(hitDoc.get("document-number")) + " 0 " + String.valueOf(sHits[i].score) + " SINGLE";
 
-                    writer.write(result + "\n");
-//                    System.out.println(result);
-
-//                    System.out.println((i+1) + ") "
-//
-////                            + "Query Number: " + (queryList.indexOf(s)+1)
-//                            + "DNo.: " + hitDoc.get("document-number")
-//                            + " Title: " + hitDoc.get("title")
-//                            + " Score: " + hits[i].score);
+                    sWriter.write(result + "\n");
                 }
 
-//                System.out.println("Done");
-                writer.close();
+                sWriter.close();
+
+                for (int i = 0; i < mHits.length; i++)
+                {
+                    Document hitDoc = isearcher.doc(mHits[i].doc);
+                    String result = String.valueOf(queryList.indexOf(s)+ 401) + " 0 " + String.valueOf(hitDoc.get("document-number")) + " 0 " + String.valueOf(mHits[i].score) + " MULTI";
+
+                    mWriter.write(result + "\n");
+                }
+
+                mWriter.close();
             }
 
         }
-        // close everything and quit
+            // close everything and quit
 
-        ireader.close();
-        directory.close();
-    }
+            ireader.close();
+            directory.close();
+        }
 
-    private static ArrayList<String> getQueryList() throws IOException {
+    private static ArrayList<String> getQueryList()throws IOException
+    {
 
-        File file = new File(String.valueOf(Paths.get("cran.qry")));
+        File file = new File(TOPIC_DIRECTORY + "/topics.401-450");
+
+        System.out.println(file.getAbsolutePath());
+
         BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
 
         String line;
@@ -133,23 +127,21 @@ public class Search {
 
         while ((line = bufferedReader.readLine()) != null)
         {
-            if (!line.contains(".I"))
+            if(line.contains("<top>"))
+                query = new StringBuilder();
+            else if (!line.contains("</top>"))
             {
                 query.append(line).append(" ");
             }
             else
             {
-                queryList.add(query.toString());
+                String description = query.substring(query.indexOf("<desc> Description: ") + 20, query.indexOf("<narr>"));
+                queryList.add(description); //Using description as the query
                 query = new StringBuilder();
                 queryCount++;
             }
         }
-        queryList.add(query.toString());
-        queryCount++;
 
-//        System.out.println("QUERY: " + queryCount);
-//
-//        System.out.println(queryList.get(queryList.size()-1));
 
         return queryList;
     }
