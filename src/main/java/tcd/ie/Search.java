@@ -7,6 +7,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -59,24 +60,24 @@ public class Search {
 
         String queryString = "";
 
+        File sFile = new File(RESULT_DIRECTORY + "/" + singleFieldResultFileName);
+        FileWriter sWriter = new FileWriter(sFile);
+
+        File mFile = new File(RESULT_DIRECTORY + "/" + multiFieldResultsFileName);
+        FileWriter mWriter = new FileWriter(mFile);
+
         for (String s : queryList) {
             queryString = s.trim();
 //
             if (queryString.length() > 0)
             {
                 // parse the query with the parser
-                Query sTerm = singleFieldQueryParser.parse(queryString); // for Single field
-                Query mTerm = multiFieldQueryParser.parse(queryString); // for Multiple fields
+                Query sTerm = singleFieldQueryParser.parse(QueryParserBase.escape(queryString)); // for Single field
+                Query mTerm = multiFieldQueryParser.parse(QueryParserBase.escape(queryString)); // for Multiple fields
 
                 // Get the set of results
                 ScoreDoc[] sHits = isearcher.search(sTerm, MAX_RESULTS).scoreDocs; // for Single field
                 ScoreDoc[] mHits = isearcher.search(mTerm, MAX_RESULTS).scoreDocs; // for Multiple fields
-
-                File sFile = new File(RESULT_DIRECTORY + "/" + singleFieldResultFileName);
-                FileWriter sWriter = new FileWriter(sFile, true);
-
-                File mFile = new File(RESULT_DIRECTORY + "/" + multiFieldResultsFileName);
-                FileWriter mWriter = new FileWriter(mFile, true);
 
                 // Print the results
 //                System.out.println("Documents: " + hits.length);
@@ -88,8 +89,6 @@ public class Search {
                     sWriter.write(result + "\n");
                 }
 
-                sWriter.close();
-
                 for (int i = 0; i < mHits.length; i++)
                 {
                     Document hitDoc = isearcher.doc(mHits[i].doc);
@@ -97,28 +96,25 @@ public class Search {
 
                     mWriter.write(result + "\n");
                 }
-
-                mWriter.close();
             }
 
         }
+
+        System.out.println("Search has been performed.\nResult files are stored in the result directory");
             // close everything and quit
 
-            ireader.close();
-            directory.close();
-        }
+        sWriter.close();
+        mWriter.close();
+        ireader.close();
+        directory.close();
+    }
 
     private static ArrayList<String> getQueryList()throws IOException
     {
 
         File file = new File(TOPIC_DIRECTORY + "/topics.401-450");
-
-        System.out.println(file.getAbsolutePath());
-
         BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
-
         String line;
-
         ArrayList<String> queryList = new ArrayList<>();
 
         StringBuilder query = new StringBuilder();
@@ -135,8 +131,13 @@ public class Search {
             }
             else
             {
+                String title = query.substring(query.indexOf("<title> ") + 8, query.indexOf("<desc>"));
                 String description = query.substring(query.indexOf("<desc> Description: ") + 20, query.indexOf("<narr>"));
-                queryList.add(description); //Using description as the query
+                String narrative = query.substring(query.indexOf("<narr> Narrative:") + 17, query.indexOf("</narr>"));
+
+                String combinedQuery = title + description + narrative;
+
+                queryList.add(combinedQuery); //Using description as the query
                 query = new StringBuilder();
                 queryCount++;
             }

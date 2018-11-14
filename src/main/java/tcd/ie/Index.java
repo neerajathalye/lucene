@@ -82,11 +82,9 @@ public class Index {
         for(Document d : parsedDocumentList)
         {
             count++;
+            System.out.println("INDEXING: " + d.get("document-number"));
             iWriter.addDocument(d);
         }
-
-        System.out.println("Combined count = " + count);
-
 
         System.out.println("Index Created.");
 
